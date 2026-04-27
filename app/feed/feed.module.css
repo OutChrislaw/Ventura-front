@@ -1,0 +1,737 @@
+:global(*) {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --text: #111111;
+  --muted: #666666;
+  --border: #e5e7eb;
+  --accent: #f5f5f5;
+  --dark: #0a0a0a;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --radius: 18px;
+}
+
+.app {
+  min-height: 100vh;
+  background: #f5f5f5;
+  color: var(--text);
+}
+
+/* =========================================================
+   NAVBAR
+   ========================================================= */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.navInner {
+  max-width: 1400px;
+  margin: 0 auto;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  gap: 32px;
+}
+
+.brand {
+  font-weight: 800;
+  font-size: 22px;
+  background: linear-gradient(135deg, #0a0a0a, #333333);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-decoration: none;
+}
+
+.navLinks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-radius: 40px;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.navLink:hover {
+  background: var(--accent);
+  color: var(--dark);
+}
+
+.navLink.active {
+  background: var(--dark);
+  color: white;
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.iconBtn {
+  background: transparent;
+  border: none;
+  padding: 8px;
+  border-radius: 50%;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.iconBtn:hover {
+  background: var(--accent);
+  color: var(--dark);
+}
+
+.avatarBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--dark);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* =========================================================
+   CENTER FEED LAYOUT
+   ========================================================= */
+.centerLayout {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 32px;
+  min-height: calc(100vh - 112px);
+}
+
+.feedLayout {
+  display: grid;
+  grid-template-columns: 260px 1fr 300px;
+  gap: 24px;
+  align-items: start;
+}
+
+.feedContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 680px;
+  justify-self: center;
+  width: 100%;
+}
+
+/* =========================================================
+   SIDEBAR (shared styles)
+   ========================================================= */
+.sidebarCard {
+  background: white;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 20px;
+}
+
+.sidebarTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dark);
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* =========================================================
+   LEFT SIDEBAR - Filters (fixed position)
+   ========================================================= */
+.leftSidebar {
+  position: sticky;
+  top: 88px;
+  align-self: start;
+}
+
+.leftSidebarInner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filterVertical {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filterVerticalBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.filterVerticalBtn:hover {
+  background: var(--accent);
+}
+
+.filterVerticalBtn.activeStatus {
+  background: var(--dark);
+  color: white;
+  font-weight: 600;
+}
+
+.filterVerticalBtn.activeStatus .filterCountPill {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.filterVerticalBtn.activeInnovator {
+  background: #2e7d32;
+  color: white;
+}
+
+.filterVerticalBtn.activeInnovator .filterCountPill {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.filterVerticalBtn.activeInvestor {
+  background: #e65100;
+  color: white;
+}
+
+.filterVerticalBtn.activeInvestor .filterCountPill {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.filterCountPill {
+  margin-left: auto;
+  background: var(--accent);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  min-width: 24px;
+  text-align: center;
+}
+
+.roleDot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.filterVerticalBtn.activeStatus .roleDot,
+.filterVerticalBtn.activeInnovator .roleDot,
+.filterVerticalBtn.activeInvestor .roleDot {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.statusLabel {
+  font-weight: 500;
+}
+
+/* =========================================================
+   RIGHT SIDEBAR (fixed position)
+   ========================================================= */
+.rightSidebar {
+  position: sticky;
+  top: 88px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.suggestedUser {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+  text-decoration: none;
+  color: var(--text);
+  transition: all 0.2s;
+  text-decoration: none;
+}
+.suggestedUser:last-child {
+  border-bottom: none;
+}
+.suggestedUser:hover {
+  opacity: 0.8;
+}
+.suggestedAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--dark);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.suggestedInfo {
+  flex: 1;
+  min-width: 0;
+}
+.suggestedName {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.suggestedRole {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: capitalize;
+}
+.suggestedMsgBtn {
+  padding: 5px 12px;
+  background: var(--accent);
+  border: none;
+  border-radius: 40px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dark);
+  cursor: pointer;
+  text-decoration: none;
+}
+.suggestedMsgBtn:hover {
+  background: #e0e0e0;
+}
+
+/* =========================================================
+   MY STATS
+   ========================================================= */
+.statsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.statRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.statLabel {
+  color: var(--muted);
+}
+
+.statValue {
+  font-weight: 700;
+  color: var(--dark);
+  font-size: 15px;
+}
+
+.statDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.statRoleBadge {
+  font-weight: 600;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 40px;
+  background: var(--accent);
+  text-transform: capitalize;
+}
+
+/* =========================================================
+   SEARCH BAR
+   ========================================================= */
+.searchContainer {
+  background: white;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.searchIcon {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.searchInput {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  font-family: inherit;
+  background: transparent;
+  color: var(--text);
+}
+.searchInput::placeholder {
+  color: var(--muted);
+}
+.clearSearch {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.clearSearch:hover {
+  background: var(--accent);
+}
+
+/* =========================================================
+   USER ROLE BADGE
+   ========================================================= */
+.roleBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 40px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.roleBadge.innovator {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+.roleBadge.investor {
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffe0b2;
+}
+
+/* =========================================================
+   CREATE POST CARD
+   ========================================================= */
+.createPostCard {
+  background: white;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 20px;
+}
+
+.createPostHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.createPostAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--dark);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.createPostTrigger {
+  flex: 1;
+  text-align: left;
+  padding: 14px 20px;
+  background: #f5f5f5;
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  font-size: 15px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.createPostTrigger:hover {
+  background: #eeeeee;
+}
+
+.createPostFormContainer {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.createPostFormHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.createPostFormHeader h4 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.closeFormBtn {
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+.mobileCreateBtn {
+  display: none;
+}
+
+.skeletonCard {
+  background: white;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 24px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.emptyFeed {
+  background: white;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 60px 32px;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContainer {
+  background: white;
+  border-radius: 28px;
+  width: 90%;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modalHeader h3 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.modalClose {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+@media (max-width: 768px) {
+  .centerLayout {
+    padding: 16px;
+  }
+
+  .navInner {
+    padding: 0 16px;
+  }
+
+  .navLinks span {
+    display: none;
+  }
+
+  .navLink {
+    padding: 8px 14px;
+  }
+
+  .brand {
+    font-size: 18px;
+  }
+
+  .avatarBtn {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .mobileCreateBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 14px;
+    background: var(--dark);
+    color: white;
+    border: none;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  .createPostCard {
+    display: none;
+  }
+
+  .modalOverlay {
+    display: flex;
+  }
+}
+
+@media (max-width: 480px) {
+  .centerLayout {
+    padding: 12px;
+  }
+
+  .navInner {
+    padding: 0 12px;
+  }
+
+  .brand {
+    font-size: 16px;
+  }
+
+  .modalContainer {
+    width: 95%;
+  }
+}
+
+/* Unread Badge on Navbar */
+.navLink {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-radius: 40px;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.unreadBadge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #610202;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 20px;
+  min-width: 18px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* =========================================================
+   RESPONSIVE - Sidebar Hide
+   ========================================================= */
+@media (max-width: 1200px) {
+  .leftSidebar {
+    display: none;
+  }
+  .feedLayout {
+    grid-template-columns: 1fr 300px;
+  }
+  .feedContainer {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .rightSidebar {
+    display: none;
+  }
+  .feedLayout {
+    grid-template-columns: 1fr;
+  }
+}

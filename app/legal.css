@@ -1,0 +1,128 @@
+/* =========================================================
+   LEGAL PAGES (Terms & Privacy) - Black Theme
+   ========================================================= */
+
+.legal-page {
+  min-height: 100vh;
+  background: #000000;
+  padding: 40px 20px;
+}
+
+.legal-container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: #0a0a0a;
+  border-radius: 20px;
+  border: 1px solid #1f1f1f;
+  overflow: hidden;
+}
+
+.legal-header {
+  padding: 40px 40px 20px;
+  border-bottom: 1px solid #1f1f1f;
+  text-align: center;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #888888;
+  text-decoration: none;
+  font-size: 14px;
+  margin-bottom: 20px;
+  transition: color 0.2s;
+}
+
+.back-link:hover {
+  color: white;
+}
+
+.legal-title {
+  font-size: 36px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 12px;
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.legal-date {
+  font-size: 13px;
+  color: #666666;
+}
+
+.legal-content {
+  padding: 30px 40px 50px;
+}
+
+.legal-section {
+  margin-bottom: 32px;
+}
+
+.legal-section h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 16px;
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.legal-section p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #aaaaaa;
+  margin-bottom: 12px;
+}
+
+.legal-section ul {
+  margin: 12px 0 0 24px;
+}
+
+.legal-section li {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #aaaaaa;
+  margin-bottom: 6px;
+}
+
+.legal-section a {
+  color: #60a5fa;
+  text-decoration: none;
+}
+
+.legal-section a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .legal-header {
+    padding: 30px 24px 16px;
+  }
+
+  .legal-title {
+    font-size: 28px;
+  }
+
+  .legal-content {
+    padding: 24px 24px 40px;
+  }
+
+  .legal-section h2 {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .legal-page {
+    padding: 20px 16px;
+  }
+
+  .legal-title {
+    font-size: 24px;
+  }
+
+  .legal-content {
+    padding: 20px 20px 30px;
+  }
+}
