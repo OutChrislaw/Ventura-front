@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useState, useContext, ReactNode } from "react";
+import { createContext, useState, useContext, ReactNode, useEffect } from "react";
 import { AuthContext } from "@/context/AuthContext";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -19,8 +19,18 @@ interface PartnershipRequest {
   requester_id: number;
   requested_id: number;
   status: string;
-  requester?: { id: number; name: string; role: string; avatar_url: string | null };
-  requested?: { id: number; name: string; role: string; avatar_url: string | null };
+  requester?: {
+    id: number;
+    name: string;
+    role: string;
+    avatar_url: string | null;
+  };
+  requested?: {
+    id: number;
+    name: string;
+    role: string;
+    avatar_url: string | null;
+  };
   created_at: string;
 }
 
@@ -39,10 +49,11 @@ interface PartnershipContextType {
   declineRequest: (id: number) => Promise<any>;
   removePartner: (id: number) => Promise<any>;
   getPartnershipStatus: (userId: number) => Promise<any>;
+  cancelSentRequest: (id: number) => Promise<any>; // ✅ ADD THIS LINE
 }
 
 export const PartnershipContext = createContext<PartnershipContextType>(
-  {} as PartnershipContextType
+  {} as PartnershipContextType,
 );
 
 const getAuthHeaders = (token: string) => ({
@@ -55,7 +66,9 @@ export function PartnershipProvider({ children }: { children: ReactNode }) {
   const { token } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [partners, setPartners] = useState<Partner[]>([]);
-  const [pendingRequests, setPendingRequests] = useState<PartnershipRequest[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<PartnershipRequest[]>(
+    [],
+  );
   const [sentRequests, setSentRequests] = useState<PartnershipRequest[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
@@ -63,7 +76,9 @@ export function PartnershipProvider({ children }: { children: ReactNode }) {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API}/partners`, { headers: getAuthHeaders(token) });
+      const res = await fetch(`${API}/partners`, {
+        headers: getAuthHeaders(token),
+      });
       const data = await res.json();
       setPartners(data.partners ?? []);
     } catch (err) {
@@ -76,7 +91,9 @@ export function PartnershipProvider({ children }: { children: ReactNode }) {
   const fetchRequests = async () => {
     if (!token) return;
     try {
-      const res = await fetch(`${API}/partners/requests`, { headers: getAuthHeaders(token) });
+      const res = await fetch(`${API}/partners/requests`, {
+        headers: getAuthHeaders(token),
+      });
       const data = await res.json();
       setPendingRequests(data.requests ?? []);
     } catch (err) {
@@ -87,7 +104,9 @@ export function PartnershipProvider({ children }: { children: ReactNode }) {
   const fetchSentRequests = async () => {
     if (!token) return;
     try {
-      const res = await fetch(`${API}/partners/sent`, { headers: getAuthHeaders(token) });
+      const res = await fetch(`${API}/partners/sent`, {
+        headers: getAuthHeaders(token),
+      });
       const data = await res.json();
       setSentRequests(data.requests ?? []);
     } catch (err) {
@@ -101,7 +120,9 @@ export function PartnershipProvider({ children }: { children: ReactNode }) {
       const params = new URLSearchParams();
       if (q) params.append("q", q);
       if (role) params.append("role", role);
-      const res = await fetch(`${API}/partners/search?${params}`, { headers: getAuthHeaders(token) });
+      const res = await fetch(`${API}/partners/search?${params}`, {
+        headers: getAuthHeaders(token),
+      });
       const data = await res.json();
       return data.users ?? [];
     } catch (err) {
@@ -184,6 +205,29 @@ export function PartnershipProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const cancelSentRequest = async (id: number) => {
+    if (!token) return { success: false };
+    try {
+      const res = await fetch(`${API}/partners/${id}/cancel`, {
+        method: "PUT",
+        headers: getAuthHeaders(token),
+      });
+      const data = await res.json();
+      return { success: res.ok, ...data };
+    } catch (err) {
+      console.error("Error cancelling request:", err);
+      return { success: false };
+    }
+  };
+
+  // Auto-fetch partners and pending requests when token is available
+  useEffect(() => {
+    if (token) {
+      fetchPartners();
+      fetchRequests();
+    }
+  }, [token]);
+
   return (
     <PartnershipContext.Provider
       value={{
@@ -201,6 +245,7 @@ export function PartnershipProvider({ children }: { children: ReactNode }) {
         declineRequest,
         removePartner,
         getPartnershipStatus,
+        cancelSentRequest,
       }}
     >
       {children}

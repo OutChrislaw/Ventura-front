@@ -5,11 +5,9 @@ import { AuthContext } from "@/context/AuthContext";
 import { AdminContext } from "@/context/AdminContext";
 import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import Loader from "@/components/Loader";
 import {
   Home,
-  MessageSquare,
-  Settings,
-  User,
   Users,
   FileText,
   Trash2,
@@ -17,6 +15,11 @@ import {
   LogOut,
   LayoutDashboard,
   Mail,
+  Handshake,
+  Search,
+  TrendingUp,
+  Settings,
+  User,
 } from "lucide-react";
 import "../admin.css";
 
@@ -31,62 +34,76 @@ function AdminNav() {
   };
 
   return (
-    <header className="admin-nav">
-      <div className="admin-nav-inner">
-        <Link href="/admin" className="admin-brand">
-          VENTURA ADMIN
+    <aside className="adminSidebar">
+      <div className="adminLogo">
+        <Link href="/admin" className="adminLogoLink">
+          <span className="adminLogoText">VENTURA ADMIN</span>
         </Link>
-        <div className="admin-nav-links">
-          <Link
-            href="/admin"
-            className="admin-nav-link"
-            onClick={() => setActiveTab("dashboard")}
-          >
-            <LayoutDashboard size={16} />
-            Dashboard
-          </Link>
-          <Link
-            href="/admin/users"
-            className="admin-nav-link"
-            onClick={() => setActiveTab("users")}
-          >
-            <Users size={16} />
-            Users
-          </Link>
-          <Link
-            href="/admin/posts"
-            className="admin-nav-link"
-            onClick={() => setActiveTab("posts")}
-          >
-            <FileText size={16} />
-            Posts
-          </Link>
-          <Link
-            href="/admin/messages"
-            className={`admin-nav-link active`}
-            onClick={() => setActiveTab("messages")}
-          >
-            <Mail size={16} />
-            Messages
-          </Link>
-          <Link href="/feed" className="admin-nav-link">
-            <Home size={16} />
-            Back to Feed
-          </Link>
-        </div>
-        <div className="admin-nav-right">
-          <div className="admin-user-info">
-            <span className="admin-user-name">{user?.name}</span>
-            <span className={`admin-user-role ${user?.role}`}>
-              {user?.role}
-            </span>
-          </div>
-          <button onClick={handleLogout} className="admin-logout-btn">
-            <LogOut size={16} /> Logout
-          </button>
-        </div>
       </div>
-    </header>
+
+      <nav className="adminSidebarNav">
+        <Link
+          href="/admin"
+          className="adminNavItem"
+          onClick={() => setActiveTab("dashboard")}
+        >
+          <LayoutDashboard size={18} />
+          <span>Dashboard</span>
+        </Link>
+        <Link
+          href="/admin/users"
+          className="adminNavItem"
+          onClick={() => setActiveTab("users")}
+        >
+          <Users size={18} />
+          <span>Users</span>
+        </Link>
+        <Link
+          href="/admin/posts"
+          className="adminNavItem"
+          onClick={() => setActiveTab("posts")}
+        >
+          <FileText size={18} />
+          <span>Posts</span>
+        </Link>
+        <Link
+          href="/admin/partnerships"
+          className="adminNavItem"
+          onClick={() => setActiveTab("partnerships")}
+        >
+          <Handshake size={18} />
+          <span>Partnerships</span>
+        </Link>
+        <Link
+          href="/admin/messages"
+          className="adminNavItem active"
+          onClick={() => setActiveTab("messages")}
+        >
+          <Mail size={18} />
+          <span>Messages</span>
+        </Link>
+        <Link href="/feed" className="adminNavItem">
+          <Home size={18} />
+          <span>Back to Feed</span>
+        </Link>
+      </nav>
+
+      <div className="adminSidebarFooter">
+        <div className="adminUserInfo">
+          <div className="adminUserAvatar">
+            {user?.name?.[0]?.toUpperCase() || "U"}
+          </div>
+          <div className="adminUserDetails">
+            <span className="adminUserName">{user?.name}</span>
+            <span className="adminUserRole">Admin</span>
+          </div>
+        </div>
+        <button onClick={handleLogout} className="adminLogoutBtn">
+          <LogOut size={16} />
+          <span>Sign out</span>
+        </button>
+      </div>
+    </aside>
   );
 }
 
@@ -98,6 +115,8 @@ export default function AdminMessages() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(
     null,
   );
+  const [searchFromQuery, setSearchFromQuery] = useState("");
+  const [searchToQuery, setSearchToQuery] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -119,11 +138,20 @@ export default function AdminMessages() {
     loadMessages();
   };
 
+  const filteredMessages = messages.filter((msg) => {
+    const matchesFrom =
+      !searchFromQuery.trim() ||
+      msg.sender?.name?.toLowerCase().includes(searchFromQuery.toLowerCase());
+    const matchesTo =
+      !searchToQuery.trim() ||
+      msg.receiver?.name?.toLowerCase().includes(searchToQuery.toLowerCase());
+    return matchesFrom && matchesTo;
+  });
+
   if (authLoading) {
     return (
-      <div className="admin-loading">
-        <div className="spinner"></div>
-        <p>Loading...</p>
+      <div className="adminLoadingBlack">
+        <Loader fullPage text="Authenticating..." />
       </div>
     );
   }
@@ -131,8 +159,8 @@ export default function AdminMessages() {
   if (!user || !user.is_admin) {
     return (
       <ProtectedRoute>
-        <div className="admin-access-denied">
-          <div className="access-denied-card">
+        <div className="adminAccessDenied">
+          <div className="adminAccessDeniedCard">
             <h2>Access Denied</h2>
             <p>You don't have permission to access this page.</p>
             <Link href="/feed">Go to Feed</Link>
@@ -144,91 +172,147 @@ export default function AdminMessages() {
 
   return (
     <ProtectedRoute>
-      <div className="admin-page">
+      <div className="adminApp">
         <AdminNav />
-        <div className="admin-container">
-          <div className="admin-header">
-            <h1 className="admin-title">Message Management</h1>
-            <span className="post-count">{messages.length} total messages</span>
+        <main className="adminMainContent">
+          <div className="adminHeaderRow">
+            <h1>Message Management</h1>
+            <div className="adminHeaderRight">
+              <span className="adminStatBadge">
+                {filteredMessages.length} total messages
+              </span>
+            </div>
           </div>
 
-          <div className="admin-card">
+          {/* Dual Search Section */}
+          <div className="adminDualSearch">
+            <div className="adminSearchGroup">
+              <label className="adminSearchLabel">Search from:</label>
+              <div className="adminSearchWrapper">
+                <Search size={16} className="adminSearchIcon" />
+                <input
+                  type="text"
+                  placeholder="Search by sender name..."
+                  value={searchFromQuery}
+                  onChange={(e) => setSearchFromQuery(e.target.value)}
+                  className="adminSearchInput"
+                />
+                {searchFromQuery && (
+                  <button
+                    className="adminSearchClear"
+                    onClick={() => setSearchFromQuery("")}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="adminSearchGroup">
+              <label className="adminSearchLabel">Search to:</label>
+              <div className="adminSearchWrapper">
+                <Search size={16} className="adminSearchIcon" />
+                <input
+                  type="text"
+                  placeholder="Search by receiver name..."
+                  value={searchToQuery}
+                  onChange={(e) => setSearchToQuery(e.target.value)}
+                  className="adminSearchInput"
+                />
+                {searchToQuery && (
+                  <button
+                    className="adminSearchClear"
+                    onClick={() => setSearchToQuery("")}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="adminCard">
             {loading ? (
-              <div className="loading-spinner">Loading messages...</div>
-            ) : messages.length === 0 ? (
-              <div className="empty-state">No messages yet</div>
+              <div className="adminLoadingInline">
+                <Loader text="Loading messages..." />
+              </div>
+            ) : filteredMessages.length === 0 ? (
+              <div className="adminEmptyState">
+                {searchFromQuery || searchToQuery
+                  ? "No messages match your search."
+                  : "No messages yet"}
+              </div>
             ) : (
-              <div className="messages-list-admin">
-                {messages.map((msg) => (
-                  <div key={msg.id} className="admin-message-item">
-                    <div className="admin-message-header">
-                      <div className="admin-message-users">
-                        <div className="admin-message-avatar">
+              <div className="adminMessagesList">
+                {filteredMessages.map((msg) => (
+                  <div key={msg.id} className="adminMessageItem">
+                    <div className="adminMessageHeader">
+                      <div className="adminMessageUsers">
+                        <div className="adminMessageAvatar">
                           {msg.sender?.name?.charAt(0)?.toUpperCase() || "?"}
                         </div>
-                        <div className="admin-message-sender">
-                          <span className="admin-message-name">
+                        <div className="adminMessageSender">
+                          <span className="adminMessageName">
                             {msg.sender?.name}
                           </span>
-                          <span className="admin-message-label">→</span>
-                          <span className="admin-message-name">
+                          <span className="adminMessageLabel">→</span>
+                          <span className="adminMessageName">
                             {msg.receiver?.name}
                           </span>
                         </div>
                       </div>
-                      <div className="admin-message-meta">
-                        <span className="admin-message-date">
+                      <div className="adminMessageMeta">
+                        <span className="adminMessageDate">
                           {new Date(msg.created_at).toLocaleDateString()} at{" "}
                           {new Date(msg.created_at).toLocaleTimeString()}
                         </span>
                         <button
-                          className="admin-delete-message"
+                          className="adminMessageDelete"
                           onClick={() => setShowDeleteConfirm(msg.id)}
-                          title="Delete message"
                         >
                           <Trash2 size={16} /> Delete Message
                         </button>
                       </div>
                     </div>
-                    <div className="admin-message-content">
-                      <p className="admin-message-text">{msg.message}</p>
+                    <div className="adminMessageContent">
+                      <p className="adminMessageText">{msg.message}</p>
                     </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
-        </div>
+        </main>
 
-        {/* Delete Confirmation Modal with clear message */}
         {showDeleteConfirm !== null && (
           <div
-            className="modal-overlay"
+            className="adminModalOverlay"
             onClick={() => setShowDeleteConfirm(null)}
           >
             <div
-              className="modal-container delete-modal"
+              className="adminModalContainer adminWarningModal"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="modal-header">
+              <div className="adminModalHeader">
                 <h3>Delete Message</h3>
                 <button onClick={() => setShowDeleteConfirm(null)}>
                   <X size={18} />
                 </button>
               </div>
-              <div className="modal-body">
+              <div className="adminModalBody">
                 <p>Are you sure you want to delete this message?</p>
-                <p className="modal-warning">This action cannot be undone.</p>
+                <p className="adminModalWarning">
+                  This action cannot be undone.
+                </p>
               </div>
-              <div className="modal-footer">
+              <div className="adminModalFooter">
                 <button
-                  className="modal-cancel"
+                  className="adminModalCancel"
                   onClick={() => setShowDeleteConfirm(null)}
                 >
                   Cancel
                 </button>
                 <button
-                  className="modal-delete"
+                  className="adminModalDelete"
                   onClick={() => handleDeleteMessage(showDeleteConfirm)}
                 >
                   Delete

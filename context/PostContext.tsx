@@ -19,6 +19,7 @@ interface Post {
 interface PostContextType {
   posts: Post[];
   loading: boolean;
+  updatingPostId: number | null; // ✅ ADD THIS
   fetchPosts: () => Promise<void>;
   createPost: (data: {
     title: string;
@@ -40,6 +41,7 @@ export function PostProvider({ children }: { children: ReactNode }) {
   const { token } = useContext(AuthContext);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
+  const [updatingPostId, setUpdatingPostId] = useState<number | null>(null); // ✅ ADD THIS
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -48,9 +50,9 @@ export function PostProvider({ children }: { children: ReactNode }) {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      setPosts(data.posts || []); // If undefined, use empty array
+      setPosts(data.posts || []);
     } catch (error) {
-      setPosts([]); // On error, set empty array
+      setPosts([]);
     }
     setLoading(false);
   };
@@ -84,25 +86,45 @@ export function PostProvider({ children }: { children: ReactNode }) {
     id: number,
     data: { title: string; body: string; status: string | null },
   ) => {
-    const res = await fetch(`${API}/posts/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-    const responseData = await res.json();
-    if (res.ok) {
-      setPosts((prev) =>
-        prev.map((post) => (post.id === id ? responseData.post : post)),
-      );
+    setUpdatingPostId(id); // ✅ Show loading state for this specific post
+    try {
+      const res = await fetch(`${API}/posts/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      const responseData = await res.json();
+      if (res.ok) {
+        setPosts((prev) =>
+          prev.map((post) =>
+            post.id === id
+              ? {
+                  ...responseData.post,
+                  user: responseData.post.user || post.user,
+                }
+              : post,
+          ),
+        );
+      }
+    } finally {
+      setUpdatingPostId(null); // ✅ Hide loading state
     }
   };
 
   return (
     <PostContext.Provider
-      value={{ posts, loading, fetchPosts, createPost, deletePost, updatePost }}
+      value={{
+        posts,
+        loading,
+        updatingPostId, // ✅ ADD THIS
+        fetchPosts,
+        createPost,
+        deletePost,
+        updatePost,
+      }}
     >
       {children}
     </PostContext.Provider>

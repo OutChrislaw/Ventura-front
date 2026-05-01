@@ -12,13 +12,13 @@ export default function ProtectedRoute({
   const router = useRouter();
 
   useEffect(() => {
-    // Only redirect after loading is complete and there's no token
+    // Only redirect after loading is complete
     if (!loading && !token) {
       router.push("/login");
     }
   }, [token, loading, router]);
 
-  // Show loading spinner while checking auth
+  // Show nothing while checking auth
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-black">

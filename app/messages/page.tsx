@@ -1,9 +1,10 @@
 "use client";
 
-import { useContext, useEffect, useState, useRef, Suspense } from "react";
+import { useContext, useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthContext } from "@/context/AuthContext";
 import { MessageContext } from "@/context/MessageContext";
+import { PartnershipContext } from "@/context/PartnershipContext";
 import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Loader from "@/components/Loader";
@@ -15,74 +16,22 @@ import {
   Search,
   X,
   Send,
-  PlusCircle,
   Users,
+  LogOut,
+  TrendingUp,
+  Trash2,
+  Mail,
+  MailOpen,
   Lightbulb,
   Briefcase,
-  MailOpen,
-  Trash2,
+  LayoutDashboard,
 } from "lucide-react";
 import "./messages.css";
 
-function AppNav() {
-  const { user } = useContext(AuthContext);
-  const { unreadCount } = useContext(MessageContext);
-  const router = useRouter();
-
-  return (
-    <header className="messages-nav">
-      <div className="messages-nav-inner">
-        <Link href="/feed" className="messages-brand">
-          VENTURA
-        </Link>
-        <div className="messages-nav-links">
-          <Link href="/feed" className="messages-nav-link">
-            <Home size={18} />
-            <span>Feed</span>
-          </Link>
-          <Link href="/partners" className="messages-nav-link">
-            <Users size={18} />
-            <span>Partners</span>
-          </Link>
-          <Link href="/messages" className="messages-nav-link active">
-            <MessageSquare size={18} />
-            <span>Messages</span>
-            {unreadCount > 0 && (
-              <span className="nav-unread-badge">{unreadCount}</span>
-            )}
-          </Link>
-          <Link href="/settings" className="messages-nav-link">
-            <Settings size={18} />
-            <span>Settings</span>
-          </Link>
-          {user?.is_admin && (
-            <Link href="/admin" className="messages-nav-link">
-              <User size={18} />
-              <span>Admin</span>
-            </Link>
-          )}
-        </div>
-        <div className="messages-nav-right">
-          <div
-            className="messages-avatar-btn"
-            onClick={() => router.push(`/profile/${user?.id}`)}
-          >
-            {user?.avatar_url ? (
-              <img src={user.avatar_url} alt={user.name} />
-            ) : (
-              (user?.name?.charAt(0)?.toUpperCase() ?? "U")
-            )}
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-type CategoryType = "all" | "unread" | "innovator" | "investor";
-
 export default function MessagesPage() {
-  const { user } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
+  const { unreadCount } = useContext(MessageContext);
+  const { pendingRequests } = useContext(PartnershipContext);
   const router = useRouter();
   const searchParams = useSearchParams();
   const {
@@ -96,19 +45,17 @@ export default function MessagesPage() {
     deleteConversation,
     deleteMessage,
   } = useContext(MessageContext);
+
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [inputMessage, setInputMessage] = useState("");
   const [sending, setSending] = useState(false);
-  const [showNewChat, setShowNewChat] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<CategoryType>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(
     null,
   );
-
-  // Delete message states
   const [showDeleteOptions, setShowDeleteOptions] = useState<{
     id: number;
     isMine: boolean;
@@ -120,10 +67,13 @@ export default function MessagesPage() {
     "for_me",
   );
   const [deleting, setDeleting] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const totalPendingRequests = pendingRequests.length;
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Check URL parameters for preselected user from post message button
+  // Check URL parameters for preselected user
   useEffect(() => {
     const userId = searchParams.get("userId");
     const userName = searchParams.get("userName");
@@ -139,22 +89,37 @@ export default function MessagesPage() {
     }
   }, [searchParams, selectedUser, router]);
 
+  // Initial fetch
   useEffect(() => {
-    fetchConversations();
+    const loadConversations = async () => {
+      setInitialLoading(true);
+      await fetchConversations();
+      setInitialLoading(false);
+    };
+    loadConversations();
   }, []);
 
+  // Fetch messages when selected user changes
   useEffect(() => {
     if (selectedUser) {
       fetchMessages(selectedUser.id);
     }
   }, [selectedUser]);
 
+  // Scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current && messages.length > 0) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
+  const handleLogout = async () => {
+    await logout();
+    router.push("/login");
+  };
+
   const handleSend = async () => {
-    if (!inputMessage.trim() || !selectedUser) return;
+    if (!inputMessage.trim() || !selectedUser || sending) return;
     setSending(true);
     await sendMessage(selectedUser.id, inputMessage);
     setInputMessage("");
@@ -168,20 +133,37 @@ export default function MessagesPage() {
     }
   };
 
-  const handleSearch = async () => {
+  const handleSearch = useCallback(async () => {
     if (searchQuery.length < 1) {
       setSearchResults([]);
       return;
     }
     setSearching(true);
-    const results = await searchUsers(searchQuery);
-    setSearchResults(results);
-    setSearching(false);
-  };
+    try {
+      const results = await searchUsers(searchQuery);
+      setSearchResults(results || []);
+    } catch (error) {
+      console.error("Search error:", error);
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  }, [searchQuery, searchUsers]);
+
+  useEffect(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    if (searchQuery.length < 1) {
+      setSearchResults([]);
+      return;
+    }
+    searchTimeoutRef.current = setTimeout(() => handleSearch(), 500);
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, [searchQuery, handleSearch]);
 
   const startNewChat = (otherUser: any) => {
     setSelectedUser(otherUser);
-    setShowNewChat(false);
     setSearchQuery("");
     setSearchResults([]);
     setTimeout(() => fetchConversations(), 500);
@@ -242,18 +224,12 @@ export default function MessagesPage() {
     ).length;
   };
 
-  const hasUnreadMessages = (conv: any) => {
-    return getUnreadCount(conv) > 0;
-  };
+  const hasUnreadMessages = (conv: any) => getUnreadCount(conv) > 0;
 
-  // Helper to get visible messages for preview
   const getVisibleMessages = (messages: any[]) => {
     return (messages || []).filter((msg: any) => {
-      if (msg.sender_id === user?.id) {
-        return !msg.deleted_by_sender;
-      } else {
-        return !msg.deleted_by_receiver;
-      }
+      if (msg.sender_id === user?.id) return !msg.deleted_by_sender;
+      else return !msg.deleted_by_receiver;
     });
   };
 
@@ -266,130 +242,216 @@ export default function MessagesPage() {
 
   if (!user) return null;
 
+  const getCategoryCount = (category: string) => {
+    if (category === "all") return conversations.length;
+    if (category === "unread")
+      return conversations.filter((conv) => hasUnreadMessages(conv)).length;
+    if (category === "innovator")
+      return conversations.filter(
+        (conv) => getPartnerRole(conv) === "innovator",
+      ).length;
+    if (category === "investor")
+      return conversations.filter((conv) => getPartnerRole(conv) === "investor")
+        .length;
+    return 0;
+  };
+
+  const filterBoxes = [
+    {
+      id: "all",
+      label: "All Messages",
+      icon: <Mail size={20} />,
+      count: getCategoryCount("all"),
+    },
+    {
+      id: "unread",
+      label: "Unread",
+      icon: <MailOpen size={20} />,
+      count: getCategoryCount("unread"),
+    },
+    {
+      id: "innovator",
+      label: "Innovators",
+      icon: <Lightbulb size={20} />,
+      count: getCategoryCount("innovator"),
+    },
+    {
+      id: "investor",
+      label: "Investors",
+      icon: <Briefcase size={20} />,
+      count: getCategoryCount("investor"),
+    },
+  ];
+
+  const isLoading = initialLoading || loading;
+
   return (
     <ProtectedRoute>
-      <div className="messages-page">
-        <AppNav />
-        <div className="messages-two-col">
-          {/* LEFT COLUMN */}
-          <div className="messages-left">
-            {/* Search Bar */}
-            <div className="search-container">
-              <div className="search-wrapper">
-                <Search size={18} className="search-icon" />
-                <input
-                  type="text"
-                  placeholder="Search users..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    if (e.target.value.length > 0) {
-                      handleSearch();
-                    } else {
-                      setSearchResults([]);
-                    }
-                  }}
-                  className="search-input"
-                />
-                {searchQuery && (
-                  <button
-                    className="search-clear"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setSearchResults([]);
-                    }}
-                  >
-                    <X size={14} />
-                  </button>
-                )}
+      <div className="app">
+        {/* BLACK SIDEBAR */}
+        <aside className="sidebar">
+          <div className="logo">
+            <Link href="/feed" className="logoLink">
+              <img src="/newhite.png" alt="VENTURA" className="logoImage" />
+            </Link>
+          </div>
+
+          <nav className="sidebarNav">
+            <Link href="/feed" className="navItem">
+              <Home size={18} />
+              <span>Feed</span>
+            </Link>
+            <Link href="/partners" className="navItem">
+              <Users size={18} />
+              <span>Partners</span>
+              {totalPendingRequests > 0 && (
+                <span className="navBadge">{totalPendingRequests}</span>
+              )}
+            </Link>
+            <Link href="/messages" className="navItem active">
+              <MessageSquare size={18} />
+              <span>Messages</span>
+              {unreadCount > 0 && (
+                <span className="navBadge">{unreadCount}</span>
+              )}
+            </Link>
+            <Link href="/trends" className="navItem">
+              <TrendingUp size={18} />
+              <span>Trends</span>
+            </Link>
+            <Link href="/settings" className="navItem">
+              <Settings size={18} />
+              <span>Settings</span>
+            </Link>
+            {user.is_admin && (
+              <Link href="/admin" className="navItem">
+                <LayoutDashboard size={18} />
+                <span>Admin</span>
+              </Link>
+            )}
+          </nav>
+
+          <div className="sidebarFooter">
+            <div className="userInfo">
+              <div className="userAvatar">
+                {user.name?.[0]?.toUpperCase() || "U"}
+              </div>
+              <div className="userDetails">
+                <span className="sidebarUserName">{user.name}</span>
+                <span className="userRole">
+                  {user.role === "innovator" ? "Innovator" : "Investor"}
+                </span>
               </div>
             </div>
+            <button onClick={handleLogout} className="logoutBtn">
+              <LogOut size={16} />
+              <span>Sign out</span>
+            </button>
+          </div>
+        </aside>
 
-            {/* Search Results (when searching) */}
-            {searchQuery && (
-              <div className="search-results">
-                {searching ? (
-                  <div className="search-loading">Searching...</div>
-                ) : searchResults.length === 0 ? (
-                  <div className="search-empty">No users found</div>
-                ) : (
-                  searchResults.map((u) => (
+        {/* WHITE MAIN CONTENT */}
+        <main className="mainContent">
+          {/* Header with Search */}
+          <div className="headerRow">
+            <div className="searchWrapper">
+              <Search size={18} className="searchIcon" />
+              <input
+                type="text"
+                className="searchInput"
+                placeholder="Search users..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button
+                  className="searchClear"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* 4 Filter Boxes */}
+          <div className="filterBoxes">
+            {filterBoxes.map((box) => (
+              <button
+                key={box.id}
+                className={`filterBox ${selectedCategory === box.id ? "active" : ""}`}
+                onClick={() => setSelectedCategory(box.id)}
+              >
+                <div className="filterBoxIcon">{box.icon}</div>
+                <div className="filterBoxInfo">
+                  <span className="filterBoxLabel">{box.label}</span>
+                  <span className="filterBoxCount">{box.count}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Search Results with Centered Loading */}
+          {searchQuery && (
+            <div className="searchResultsSection">
+              {searching ? (
+                <div className="centerLoader">
+                  <div className="spinner"></div>
+                  <p>Searching users...</p>
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div className="centerMsg">
+                  <Search size={48} />
+                  <p>No users found</p>
+                </div>
+              ) : (
+                <div className="userList">
+                  {searchResults.map((u) => (
                     <div
                       key={u.id}
-                      className="search-result-item"
+                      className="userCard"
                       onClick={() => startNewChat(u)}
                     >
-                      <div className="search-result-avatar">
+                      <div className="userAvatarSmall">
                         {u.name.charAt(0).toUpperCase()}
                       </div>
-                      <div className="search-result-info">
-                        <div className="search-result-name">{u.name}</div>
-                        <div className="search-result-role">
+                      <div className="userInfo">
+                        <div className="userName">{u.name}</div>
+                        <div className="userRole">
                           {u.role === "innovator" ? "Innovator" : "Investor"}
                         </div>
                       </div>
-                      <button className="search-result-btn">Message</button>
+                      <button className="messageBtn">Message</button>
                     </div>
-                  ))
-                )}
-              </div>
-            )}
-
-            {/* Filter Logos */}
-            {!searchQuery && (
-              <div className="filter-logos-section">
-                <div className="filter-logos-grid">
-                  <button
-                    className={`filter-logo ${selectedCategory === "all" ? "active" : ""}`}
-                    onClick={() => setSelectedCategory("all")}
-                  >
-                    <Users size={20} />
-                    <span>All</span>
-                  </button>
-                  <button
-                    className={`filter-logo ${selectedCategory === "unread" ? "active" : ""}`}
-                    onClick={() => setSelectedCategory("unread")}
-                  >
-                    <MailOpen size={20} />
-                    <span>Unread</span>
-                  </button>
-                  <button
-                    className={`filter-logo ${selectedCategory === "innovator" ? "active" : ""}`}
-                    onClick={() => setSelectedCategory("innovator")}
-                  >
-                    <Lightbulb size={20} />
-                    <span>Innovators</span>
-                  </button>
-                  <button
-                    className={`filter-logo ${selectedCategory === "investor" ? "active" : ""}`}
-                    onClick={() => setSelectedCategory("investor")}
-                  >
-                    <Briefcase size={20} />
-                    <span>Investors</span>
-                  </button>
+                  ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+          )}
 
-            {/* Conversation List */}
-            {!searchQuery && (
-              <div className="conversation-list">
-                <div className="conv-list-header">
+          {/* Two Column Layout - Conversations + Chat */}
+          {!searchQuery && (
+            <div className="twoColumnLayout">
+              {/* Left Column - Conversations List with Centered Loading */}
+              <div className="conversationsColumn">
+                <div className="conversationsHeader">
                   <h3>Messages</h3>
                 </div>
-                <div className="conv-items">
-                  {loading && filteredConversations.length === 0 ? (
-                    <Loader text="Loading conversations..." />
+                <div className="conversationsList">
+                  {isLoading ? (
+                    <div className="centerLoader">
+                      <div className="spinner"></div>
+                      <p>Loading conversations...</p>
+                    </div>
                   ) : filteredConversations.length === 0 ? (
-                    <div className="conv-empty-state">
-                      <p>No conversations</p>
+                    <div className="centerMsg">
+                      <MessageSquare size={48} />
+                      <p>No conversations found</p>
                     </div>
                   ) : (
                     filteredConversations.map((conv) => {
                       const partner = getConversationPartner(conv);
                       const unread = getUnreadCount(conv);
-
-                      // Get only visible messages for preview
                       const visibleMessages = getVisibleMessages(
                         conv.messages || [],
                       );
@@ -399,46 +461,44 @@ export default function MessagesPage() {
                       return (
                         <div
                           key={conv.id}
-                          className={`conv-row ${selectedUser?.id === partner?.id ? "active" : ""}`}
+                          className={`conversationItem ${selectedUser?.id === partner?.id ? "active" : ""}`}
                           onClick={() => setSelectedUser(partner)}
                         >
-                          <div className="conv-avatar">
+                          <div className="conversationAvatar">
                             {partner?.name?.charAt(0)?.toUpperCase() || "U"}
-                            {unread > 0 && <span className="conv-unread-dot" />}
                           </div>
-                          <div className="conv-details">
-                            <div className="conv-name">{partner?.name}</div>
-                            <div className="conv-preview">
+                          <div className="conversationInfo">
+                            <div className="conversationName">
+                              {partner?.name}
+                            </div>
+                            <div className="conversationPreview">
                               {lastMessage?.sender_id === user.id
                                 ? "You: "
                                 : ""}
-                              {lastMessage?.message?.substring(0, 35) ||
+                              {lastMessage?.message?.substring(0, 40) ||
                                 "No messages yet"}
                             </div>
                           </div>
-                          <div className="conv-right">
+                          <div className="conversationMeta">
                             {unread > 0 && (
-                              <span className="conv-unread-badge">
-                                {unread}
-                              </span>
+                              <span className="unreadBadge">{unread}</span>
                             )}
                             {lastMessage?.created_at && (
-                              <div className="conv-time">
+                              <span className="conversationTime">
                                 {new Date(
                                   lastMessage.created_at,
                                 ).toLocaleTimeString([], {
                                   hour: "2-digit",
                                   minute: "2-digit",
                                 })}
-                              </div>
+                              </span>
                             )}
                             <button
-                              className="conv-delete-btn"
+                              className="deleteConvBtn"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setShowDeleteConfirm(conv.id);
                               }}
-                              title="Hide conversation"
                             >
                               <Trash2 size={14} />
                             </button>
@@ -449,364 +509,303 @@ export default function MessagesPage() {
                   )}
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* RIGHT COLUMN - Chat Window */}
-          {selectedUser ? (
-            <div className="messages-right">
-              <div className="chat-header">
-                <div className="chat-user-info">
-                  <div className="chat-avatar">
-                    {selectedUser.name?.charAt(0)?.toUpperCase() || "U"}
-                  </div>
-                  <div>
-                    <div className="chat-name">{selectedUser.name}</div>
-                    <div className="chat-role">
-                      {selectedUser.role === "innovator"
-                        ? "Innovator"
-                        : "Investor"}
-                    </div>
-                  </div>
-                </div>
-                <div className="chat-actions">
-                  <Link
-                    href={`/profile/${selectedUser.id}`}
-                    className="chat-profile-btn"
-                  >
-                    <User size={16} /> Profile
-                  </Link>
-                </div>
-              </div>
-
-              <div className="chat-messages">
-                {loading && messages.length === 0 ? (
-                  <Loader text="Loading messages..." />
-                ) : messages.length === 0 ? (
-                  <div className="chat-empty">
-                    <p>No messages yet</p>
-                  </div>
-                ) : (
-                  messages.map((msg) => {
-                    const isMine = msg.sender_id === user.id;
-                    return (
-                      <div
-                        key={msg.id}
-                        className={`chat-message-wrapper ${isMine ? "mine" : "theirs"}`}
-                      >
-                        <div
-                          className={`chat-bubble ${isMine ? "mine" : "theirs"}`}
-                        >
-                          <div className="chat-bubble-text">{msg.message}</div>
-                          <div className="chat-bubble-time">
-                            {new Date(msg.created_at).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                            {isMine && msg.is_read && (
-                              <span className="chat-read">✓✓ Read</span>
-                            )}
+              {/* Right Column - Chat Window with Centered Loading */}
+              <div className="chatColumn">
+                {selectedUser ? (
+                  <>
+                    <div className="chatHeader">
+                      <div className="chatUserInfo">
+                        <div className="chatAvatar">
+                          {selectedUser.name?.charAt(0)?.toUpperCase() || "U"}
+                        </div>
+                        <div>
+                          <div className="chatName">{selectedUser.name}</div>
+                          <div className="chatRole">
+                            {selectedUser.role === "innovator"
+                              ? "Innovator"
+                              : "Investor"}
                           </div>
                         </div>
-                        <button
-                          className="chat-delete-btn"
-                          onClick={() => handleDeleteClick(msg.id, isMine)}
-                          title="Delete message"
-                        >
-                          <Trash2 size={14} />
-                        </button>
                       </div>
-                    );
-                  })
-                )}
-                <div ref={messagesEndRef} />
-              </div>
+                      <Link
+                        href={`/profile/${selectedUser.id}`}
+                        className="profileBtn"
+                      >
+                        <User size={16} /> Profile
+                      </Link>
+                    </div>
 
-              <div className="chat-input">
-                <textarea
-                  rows={1}
-                  placeholder="Message..."
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={sending || !inputMessage.trim()}
-                >
-                  <Send size={18} />
-                </button>
+                    <div className="chatMessages">
+                      {loading && messages.length === 0 ? (
+                        <div className="centerLoader">
+                          <div className="spinner"></div>
+                          <p>Loading messages...</p>
+                        </div>
+                      ) : messages.length === 0 ? (
+                        <div className="centerMsg">
+                          <MessageSquare size={48} />
+                          <p>No messages yet</p>
+                          <p className="emptySubtext">
+                            Send a message to start the conversation
+                          </p>
+                        </div>
+                      ) : (
+                        messages.map((msg) => {
+                          const isMine = msg.sender_id === user.id;
+                          return (
+                            <div
+                              key={msg.id}
+                              className={`messageWrapper ${isMine ? "mine" : "theirs"}`}
+                            >
+                              <div
+                                className={`messageBubble ${isMine ? "mine" : "theirs"}`}
+                              >
+                                <p>{msg.message}</p>
+                                <span className="messageTime">
+                                  {new Date(msg.created_at).toLocaleTimeString(
+                                    [],
+                                    { hour: "2-digit", minute: "2-digit" },
+                                  )}
+                                  {isMine && msg.is_read && (
+                                    <span className="readReceipt"> ✓✓</span>
+                                  )}
+                                </span>
+                              </div>
+                              <button
+                                className="deleteMsgBtn"
+                                onClick={() =>
+                                  handleDeleteClick(msg.id, isMine)
+                                }
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          );
+                        })
+                      )}
+                      <div ref={messagesEndRef} />
+                    </div>
+
+                    <div className="chatInput">
+                      <textarea
+                        rows={1}
+                        placeholder="Type a message..."
+                        value={inputMessage}
+                        onChange={(e) => setInputMessage(e.target.value)}
+                        onKeyDown={handleKeyPress}
+                      />
+                      <button
+                        onClick={handleSend}
+                        disabled={sending || !inputMessage.trim()}
+                      >
+                        <Send size={18} />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="centerMsg">
+                    <p className="emptySubtext">
+                      Choose someone to start messaging
+                    </p>
+                  </div>
+                )}
               </div>
-            </div>
-          ) : (
-            <div className="messages-right-empty">
-              <p>No conversation selected</p>
             </div>
           )}
-        </div>
-
-        {/* Delete Options Modal - For Sender (own message) */}
-        {showDeleteOptions !== null && showDeleteOptions.isMine && (
-          <div
-            className="modal-overlay"
-            onClick={() => setShowDeleteOptions(null)}
-          >
-            <div
-              className="modal-container delete-options-modal"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="modal-header">
-                <h3>Delete Message</h3>
-                <button onClick={() => setShowDeleteOptions(null)}>
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="modal-body">
-                <p className="delete-options-title">
-                  How do you want to delete this message?
-                </p>
-                <label className="delete-option">
-                  <input
-                    type="radio"
-                    name="deleteType"
-                    value="for_everyone"
-                    checked={deleteType === "for_everyone"}
-                    onChange={() => setDeleteType("for_everyone")}
-                  />
-                  <div>
-                    <strong>Delete for everyone</strong>
-                    <span>
-                      Permanently remove this message for all participants.
-                    </span>
-                  </div>
-                </label>
-                <label className="delete-option">
-                  <input
-                    type="radio"
-                    name="deleteType"
-                    value="for_me"
-                    checked={deleteType === "for_me"}
-                    onChange={() => setDeleteType("for_me")}
-                  />
-                  <div>
-                    <strong>Delete for me only</strong>
-                    <span>
-                      Remove this message from your view only. Others will still
-                      see it.
-                    </span>
-                  </div>
-                </label>
-              </div>
-              <div className="modal-footer">
-                <button
-                  className="modal-cancel"
-                  onClick={() => setShowDeleteOptions(null)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="modal-delete"
-                  onClick={handleDeleteOptionContinue}
-                >
-                  Continue
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Delete Options Modal - For Receiver (other's message) */}
-        {showDeleteOptions !== null && !showDeleteOptions.isMine && (
-          <div
-            className="modal-overlay"
-            onClick={() => setShowDeleteOptions(null)}
-          >
-            <div
-              className="modal-container delete-modal"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="modal-header">
-                <h3>Delete Message</h3>
-                <button onClick={() => setShowDeleteOptions(null)}>
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="modal-body">
-                <p>Hide this message from your view only?</p>
-                <p className="modal-warning">
-                  The other person will still be able to see it.
-                </p>
-              </div>
-              <div className="modal-footer">
-                <button
-                  className="modal-cancel"
-                  onClick={() => setShowDeleteOptions(null)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="modal-delete"
-                  onClick={() => {
-                    handleDeleteMessage(
-                      showDeleteOptions.id,
-                      showDeleteOptions.isMine,
-                      "for_me",
-                    );
-                    setShowDeleteOptions(null);
-                  }}
-                >
-                  Yes, Hide
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Permanent Deletion Confirmation Modal (Second step) */}
-        {showPermanentConfirm !== null && (
-          <div
-            className="modal-overlay"
-            onClick={() => setShowPermanentConfirm(null)}
-          >
-            <div
-              className="modal-container delete-modal warning-modal"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="modal-header">
-                <h3>⚠️ Permanent Deletion</h3>
-                <button onClick={() => setShowPermanentConfirm(null)}>
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="modal-body">
-                <p className="warning-text">Are you absolutely sure?</p>
-                <p>
-                  This will permanently delete this message for{" "}
-                  <strong>EVERYONE</strong>.
-                </p>
-                <p className="modal-warning">This action cannot be undone.</p>
-              </div>
-              <div className="modal-footer">
-                <button
-                  className="modal-cancel"
-                  onClick={() => setShowPermanentConfirm(null)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="modal-delete-permanent"
-                  onClick={() => {
-                    handleDeleteMessage(
-                      showPermanentConfirm,
-                      true,
-                      "for_everyone",
-                    );
-                  }}
-                  disabled={deleting}
-                >
-                  {deleting ? "Deleting..." : "Yes, Delete Permanently"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Hide Conversation Confirmation Modal */}
-        {showDeleteConfirm !== null && (
-          <div
-            className="modal-overlay"
-            onClick={() => setShowDeleteConfirm(null)}
-          >
-            <div
-              className="modal-container delete-modal"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="modal-header">
-                <h3>Hide Conversation</h3>
-                <button onClick={() => setShowDeleteConfirm(null)}>
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="modal-body">
-                <p>Are you sure you want to hide this conversation?</p>
-                <p className="modal-warning">
-                  This will remove it from your view only. The other person will
-                  still be able to see it.
-                </p>
-              </div>
-              <div className="modal-footer">
-                <button
-                  className="modal-cancel"
-                  onClick={() => setShowDeleteConfirm(null)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="modal-delete"
-                  onClick={() => handleDeleteConversation(showDeleteConfirm)}
-                >
-                  Hide
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* New Chat Modal */}
-        {showNewChat && (
-          <div className="modal-overlay" onClick={() => setShowNewChat(false)}>
-            <div
-              className="modal-container"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="modal-header">
-                <h3>New Message</h3>
-                <button onClick={() => setShowNewChat(false)}>
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="modal-search">
-                <Search size={16} />
-                <input
-                  type="text"
-                  placeholder="Search by name or email..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    handleSearch();
-                  }}
-                  autoFocus
-                />
-              </div>
-              <div className="modal-results">
-                {searching ? (
-                  <div className="modal-loading">Searching...</div>
-                ) : searchResults.length === 0 && searchQuery ? (
-                  <div className="modal-empty">No users found</div>
-                ) : (
-                  searchResults.map((u) => (
-                    <div
-                      key={u.id}
-                      className="modal-user"
-                      onClick={() => startNewChat(u)}
-                    >
-                      <div className="modal-user-avatar">
-                        {u.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="modal-user-info">
-                        <div className="modal-user-name">{u.name}</div>
-                        <div className="modal-user-role">
-                          {u.role === "innovator" ? "Innovator" : "Investor"}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        </main>
       </div>
+
+      {/* All modals remain the same */}
+      {showDeleteOptions !== null && showDeleteOptions.isMine && (
+        <div
+          className="modalOverlay"
+          onClick={() => setShowDeleteOptions(null)}
+        >
+          <div className="modalContainer" onClick={(e) => e.stopPropagation()}>
+            <div className="modalHeader">
+              <h3>Delete Message</h3>
+              <button onClick={() => setShowDeleteOptions(null)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modalBody">
+              <p className="deleteOptionsTitle">
+                How do you want to delete this message?
+              </p>
+              <label className="deleteOption">
+                <input
+                  type="radio"
+                  name="deleteType"
+                  value="for_me"
+                  checked={deleteType === "for_me"}
+                  onChange={() => setDeleteType("for_me")}
+                />
+                <div>
+                  <strong>Delete for me only</strong>
+                  <span>Remove this message from your view only.</span>
+                </div>
+              </label>
+              <label className="deleteOption">
+                <input
+                  type="radio"
+                  name="deleteType"
+                  value="for_everyone"
+                  checked={deleteType === "for_everyone"}
+                  onChange={() => setDeleteType("for_everyone")}
+                />
+                <div>
+                  <strong>Delete for everyone</strong>
+                  <span>
+                    Permanently remove this message for all participants.
+                  </span>
+                </div>
+              </label>
+            </div>
+            <div className="modalFooter">
+              <button
+                className="cancelBtn"
+                onClick={() => setShowDeleteOptions(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="deleteBtn"
+                onClick={handleDeleteOptionContinue}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteOptions !== null && !showDeleteOptions.isMine && (
+        <div
+          className="modalOverlay"
+          onClick={() => setShowDeleteOptions(null)}
+        >
+          <div className="modalContainer" onClick={(e) => e.stopPropagation()}>
+            <div className="modalHeader">
+              <h3>Delete Message</h3>
+              <button onClick={() => setShowDeleteOptions(null)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modalBody">
+              <p>Hide this message from your view only?</p>
+              <p className="modalWarning">
+                The other person will still be able to see it.
+              </p>
+            </div>
+            <div className="modalFooter">
+              <button
+                className="cancelBtn"
+                onClick={() => setShowDeleteOptions(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="deleteBtn"
+                onClick={() => {
+                  handleDeleteMessage(
+                    showDeleteOptions.id,
+                    showDeleteOptions.isMine,
+                    "for_me",
+                  );
+                  setShowDeleteOptions(null);
+                }}
+              >
+                Yes, Hide
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPermanentConfirm !== null && (
+        <div
+          className="modalOverlay"
+          onClick={() => setShowPermanentConfirm(null)}
+        >
+          <div
+            className="modalContainer warningModal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modalHeader">
+              <h3>⚠️ Permanent Deletion</h3>
+              <button onClick={() => setShowPermanentConfirm(null)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modalBody">
+              <p className="warningText">Are you absolutely sure?</p>
+              <p>
+                This will permanently delete this message for{" "}
+                <strong>EVERYONE</strong>.
+              </p>
+              <p className="modalWarning">This action cannot be undone.</p>
+            </div>
+            <div className="modalFooter">
+              <button
+                className="cancelBtn"
+                onClick={() => setShowPermanentConfirm(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="permanentDeleteBtn"
+                onClick={() =>
+                  handleDeleteMessage(
+                    showPermanentConfirm,
+                    true,
+                    "for_everyone",
+                  )
+                }
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Yes, Delete Permanently"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm !== null && (
+        <div
+          className="modalOverlay"
+          onClick={() => setShowDeleteConfirm(null)}
+        >
+          <div className="modalContainer" onClick={(e) => e.stopPropagation()}>
+            <div className="modalHeader">
+              <h3>Hide Conversation</h3>
+              <button onClick={() => setShowDeleteConfirm(null)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modalBody">
+              <p>Are you sure you want to hide this conversation?</p>
+              <p className="modalWarning">
+                This will remove it from your view only.
+              </p>
+            </div>
+            <div className="modalFooter">
+              <button
+                className="cancelBtn"
+                onClick={() => setShowDeleteConfirm(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="deleteBtn"
+                onClick={() => handleDeleteConversation(showDeleteConfirm)}
+              >
+                Hide
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </ProtectedRoute>
   );
 }

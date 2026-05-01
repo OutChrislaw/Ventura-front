@@ -20,4 +20,3 @@ const Loader = ({ fullPage = false, text = "Loading..." }: LoaderProps) => {
 };
 
 export default Loader;
-

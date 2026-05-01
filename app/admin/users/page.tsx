@@ -5,11 +5,9 @@ import { AuthContext } from "@/context/AuthContext";
 import { AdminContext } from "@/context/AdminContext";
 import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import Loader from "@/components/Loader";
 import {
   Home,
-  MessageSquare,
-  Settings,
-  User,
   Users,
   FileText,
   Trash2,
@@ -22,6 +20,10 @@ import {
   Mail,
   Eye,
   EyeOff,
+  Handshake,
+  TrendingUp,
+  Settings,
+  User,
 } from "lucide-react";
 import "../admin.css";
 
@@ -36,58 +38,76 @@ function AdminNav() {
   };
 
   return (
-    <header className="admin-nav">
-      <div className="admin-nav-inner">
-        <Link href="/admin" className="admin-brand">
-          VENTURA ADMIN
+    <aside className="adminSidebar">
+      <div className="adminLogo">
+        <Link href="/admin" className="adminLogoLink">
+          <span className="adminLogoText">VENTURA ADMIN</span>
         </Link>
-        <div className="admin-nav-links">
-          <Link
-            href="/admin"
-            className="admin-nav-link"
-            onClick={() => setActiveTab("dashboard")}
-          >
-            <LayoutDashboard size={16} />
-            Dashboard
-          </Link>
-          <Link href="/admin/users" className={`admin-nav-link active`}>
-            <Users size={16} />
-            Users
-          </Link>
-          <Link
-            href="/admin/posts"
-            className="admin-nav-link"
-            onClick={() => setActiveTab("posts")}
-          >
-            <FileText size={16} />
-            Posts
-          </Link>
-          <Link
-            href="/admin/messages"
-            className="admin-nav-link"
-            onClick={() => setActiveTab("messages")}
-          >
-            <Mail size={16} />
-            Messages
-          </Link>
-          <Link href="/feed" className="admin-nav-link">
-            <Home size={16} />
-            Back to Feed
-          </Link>
-        </div>
-        <div className="admin-nav-right">
-          <div className="admin-user-info">
-            <span className="admin-user-name">{user?.name}</span>
-            <span className={`admin-user-role ${user?.role}`}>
-              {user?.role}
-            </span>
-          </div>
-          <button onClick={handleLogout} className="admin-logout-btn">
-            <LogOut size={16} /> Logout
-          </button>
-        </div>
       </div>
-    </header>
+
+      <nav className="adminSidebarNav">
+        <Link
+          href="/admin"
+          className={`adminNavItem ${activeTab === "dashboard" ? "active" : ""}`}
+          onClick={() => setActiveTab("dashboard")}
+        >
+          <LayoutDashboard size={18} />
+          <span>Dashboard</span>
+        </Link>
+        <Link
+          href="/admin/users"
+          className={`adminNavItem active`}
+          onClick={() => setActiveTab("users")}
+        >
+          <Users size={18} />
+          <span>Users</span>
+        </Link>
+        <Link
+          href="/admin/posts"
+          className={`adminNavItem ${activeTab === "posts" ? "active" : ""}`}
+          onClick={() => setActiveTab("posts")}
+        >
+          <FileText size={18} />
+          <span>Posts</span>
+        </Link>
+        <Link
+          href="/admin/partnerships"
+          className={`adminNavItem ${activeTab === "partnerships" ? "active" : ""}`}
+          onClick={() => setActiveTab("partnerships")}
+        >
+          <Handshake size={18} />
+          <span>Partnerships</span>
+        </Link>
+        <Link
+          href="/admin/messages"
+          className={`adminNavItem ${activeTab === "messages" ? "active" : ""}`}
+          onClick={() => setActiveTab("messages")}
+        >
+          <Mail size={18} />
+          <span>Messages</span>
+        </Link>
+        <Link href="/feed" className="adminNavItem">
+          <Home size={18} />
+          <span>Back to Feed</span>
+        </Link>
+      </nav>
+
+      <div className="adminSidebarFooter">
+        <div className="adminUserInfo">
+          <div className="adminUserAvatar">
+            {user?.name?.[0]?.toUpperCase() || "U"}
+          </div>
+          <div className="adminUserDetails">
+            <span className="adminUserName">{user?.name}</span>
+            <span className="adminUserRole">Admin</span>
+          </div>
+        </div>
+        <button onClick={handleLogout} className="adminLogoutBtn">
+          <LogOut size={16} />
+          <span>Sign out</span>
+        </button>
+      </div>
+    </aside>
   );
 }
 
@@ -126,7 +146,6 @@ export default function AdminUsers() {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  // Password visibility states
   const [showCreatePassword, setShowCreatePassword] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [showEditConfirmPassword, setShowEditConfirmPassword] = useState(false);
@@ -228,9 +247,8 @@ export default function AdminUsers() {
 
   if (authLoading) {
     return (
-      <div className="admin-loading">
-        <div className="spinner"></div>
-        <p>Loading...</p>
+      <div className="adminLoadingBlack">
+        <Loader fullPage text="Authenticating..." />
       </div>
     );
   }
@@ -238,8 +256,8 @@ export default function AdminUsers() {
   if (!user || !user.is_admin) {
     return (
       <ProtectedRoute>
-        <div className="admin-access-denied">
-          <div className="access-denied-card">
+        <div className="adminAccessDenied">
+          <div className="adminAccessDeniedCard">
             <h2>Access Denied</h2>
             <p>You don't have permission to access this page.</p>
             <Link href="/feed">Go to Feed</Link>
@@ -251,110 +269,118 @@ export default function AdminUsers() {
 
   return (
     <ProtectedRoute>
-      <div className="admin-page">
+      <div className="adminApp">
         <AdminNav />
-        <div className="admin-container">
-          <div className="admin-header">
-            <h1 className="admin-title">User Management</h1>
-            <button
-              className="create-btn"
-              onClick={() => setShowCreateModal(true)}
-            >
-              <PlusCircle size={18} /> Add New User
-            </button>
+        <main className="adminMainContent">
+          <div className="adminHeaderRow">
+            <h1>User Management</h1>
+            <div className="adminHeaderRight">
+              <button
+                className="adminCreateBtn"
+                onClick={() => setShowCreateModal(true)}
+              >
+                <PlusCircle size={18} /> Add New User
+              </button>
+            </div>
           </div>
 
-          <div className="admin-card">
+          <div className="adminCard">
             {loading ? (
-              <div className="loading-spinner">Loading users...</div>
+              <div className="adminLoadingInline">
+                <Loader text="Loading users..." />
+              </div>
             ) : (
-              <table className="admin-table full-width">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Admin</th>
-                    <th>Joined</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u) => (
-                    <tr key={u.id}>
-                      <td>{u.id}</td>
-                      <td>{u.name}</td>
-                      <td>{u.email}</td>
-                      <td>
-                        <span className={`role-badge ${u.role}`}>{u.role}</span>
-                      </td>
-                      <td>
-                        {u.is_admin ? (
-                          <span className="admin-badge">Admin</span>
-                        ) : (
-                          <span className="user-badge">User</span>
-                        )}
-                      </td>
-                      <td>{new Date(u.created_at).toLocaleDateString()}</td>
-                      <td className="actions-cell">
-                        <button
-                          className="icon-btn edit"
-                          onClick={() => handleEditClick(u)}
-                          title="Edit User (Email & Password)"
-                        >
-                          <Key size={16} />
-                        </button>
-                        <button
-                          className="icon-btn role"
-                          onClick={() =>
-                            setShowRoleModal({
-                              id: u.id,
-                              name: u.name,
-                              role: u.role,
-                              isAdmin: u.is_admin,
-                            })
-                          }
-                          title="Edit Role"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        {u.id !== user.id && (
-                          <button
-                            className="icon-btn delete"
-                            onClick={() => setShowDeleteConfirm(u.id)}
-                            title="Delete User"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        )}
-                      </td>
+              <div className="adminTableWrapper">
+                <table className="adminTable">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Role</th>
+                      <th>Admin</th>
+                      <th>Joined</th>
+                      <th>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u.id}>
+                        <td>{u.id}</td>
+                        <td>{u.name}</td>
+                        <td>{u.email}</td>
+                        <td>
+                          <span className={`adminRoleBadge ${u.role}`}>
+                            {u.role}
+                          </span>
+                        </td>
+                        <td>
+                          {u.is_admin ? (
+                            <span className="adminBadge">Admin</span>
+                          ) : (
+                            <span className="userBadge">User</span>
+                          )}
+                        </td>
+                        <td>{new Date(u.created_at).toLocaleDateString()}</td>
+                        <td className="adminActionsCell">
+                          <button
+                            className="adminIconBtn edit"
+                            onClick={() => handleEditClick(u)}
+                            title="Edit User"
+                          >
+                            <Key size={16} />
+                          </button>
+                          <button
+                            className="adminIconBtn role"
+                            onClick={() =>
+                              setShowRoleModal({
+                                id: u.id,
+                                name: u.name,
+                                role: u.role,
+                                isAdmin: u.is_admin,
+                              })
+                            }
+                            title="Edit Role"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          {u.id !== user.id && (
+                            <button
+                              className="adminIconBtn delete"
+                              onClick={() => setShowDeleteConfirm(u.id)}
+                              title="Delete User"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
-        </div>
+        </main>
 
-        {/* Create User Modal with Password Toggle */}
+        {/* Modals remain similar but with updated class names */}
         {showCreateModal && (
           <div
-            className="modal-overlay"
+            className="adminModalOverlay"
             onClick={() => setShowCreateModal(false)}
           >
             <div
-              className="modal-container"
+              className="adminModalContainer"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="modal-header">
+              <div className="adminModalHeader">
                 <h3>Create New User</h3>
                 <button onClick={() => setShowCreateModal(false)}>
                   <X size={18} />
                 </button>
               </div>
               <form onSubmit={handleCreateUser}>
-                <div className="modal-body">
+                <div className="adminModalBody">
                   <input
                     type="text"
                     placeholder="Full Name"
@@ -373,7 +399,7 @@ export default function AdminUsers() {
                     }
                     required
                   />
-                  <div className="password-input-wrapper">
+                  <div className="adminPasswordWrapper">
                     <input
                       type={showCreatePassword ? "text" : "password"}
                       placeholder="Password"
@@ -382,13 +408,10 @@ export default function AdminUsers() {
                         setFormData({ ...formData, password: e.target.value })
                       }
                       required
-                      autoComplete="new-password"
                     />
                     <button
                       type="button"
-                      className="password-toggle"
                       onClick={() => setShowCreatePassword(!showCreatePassword)}
-                      tabIndex={-1}
                     >
                       {showCreatePassword ? (
                         <Eye size={18} />
@@ -402,13 +425,32 @@ export default function AdminUsers() {
                     onChange={(e) =>
                       setFormData({ ...formData, role: e.target.value })
                     }
+                    style={{
+                      backgroundColor: "#2a2a2a",
+                      color: "#e0e0e0",
+                      border: "1px solid #444444",
+                      borderRadius: "6px",
+                      padding: "10px 14px",
+                      width: "100%",
+                      cursor: "pointer",
+                    }}
                   >
-                    <option value="innovator">Innovator</option>
-                    <option value="investor">Investor</option>
+                    <option
+                      value="innovator"
+                      style={{ backgroundColor: "#2a2a2a", color: "#e0e0e0" }}
+                    >
+                      Innovator
+                    </option>
+                    <option
+                      value="investor"
+                      style={{ backgroundColor: "#2a2a2a", color: "#e0e0e0" }}
+                    >
+                      Investor
+                    </option>
                   </select>
-                  <div className="checkbox-row">
-                    <span className="checkbox-label-text">Add as admin?</span>
-                    <label className="checkbox-switch">
+                  <div className="adminCheckboxRow">
+                    <span>Add as admin?</span>
+                    <label className="adminSwitch">
                       <input
                         type="checkbox"
                         checked={formData.is_admin}
@@ -419,21 +461,21 @@ export default function AdminUsers() {
                           })
                         }
                       />
-                      <span className="checkbox-slider"></span>
+                      <span className="adminSwitchSlider"></span>
                     </label>
                   </div>
                 </div>
-                <div className="modal-footer">
+                <div className="adminModalFooter">
                   <button
                     type="button"
-                    className="modal-cancel"
+                    className="adminModalCancel"
                     onClick={() => setShowCreateModal(false)}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="modal-create"
+                    className="adminModalCreate"
                     disabled={submitting}
                   >
                     {submitting ? "Creating..." : "Create User"}
@@ -444,21 +486,23 @@ export default function AdminUsers() {
           </div>
         )}
 
-        {/* Role Modal */}
         {showRoleModal && (
-          <div className="modal-overlay" onClick={() => setShowRoleModal(null)}>
+          <div
+            className="adminModalOverlay"
+            onClick={() => setShowRoleModal(null)}
+          >
             <div
-              className="modal-container"
+              className="adminModalContainer"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="modal-header">
+              <div className="adminModalHeader">
                 <h3>Update User Role</h3>
                 <button onClick={() => setShowRoleModal(null)}>
                   <X size={18} />
                 </button>
               </div>
-              <div className="modal-body">
-                <p className="modal-user-name">User: {showRoleModal.name}</p>
+              <div className="adminModalBody">
+                <p className="adminModalUserName">User: {showRoleModal.name}</p>
                 <select
                   value={showRoleModal.role}
                   onChange={(e) =>
@@ -468,9 +512,9 @@ export default function AdminUsers() {
                   <option value="innovator">Innovator</option>
                   <option value="investor">Investor</option>
                 </select>
-                <div className="checkbox-row">
-                  <span className="checkbox-label-text">Add as admin?</span>
-                  <label className="checkbox-switch">
+                <div className="adminCheckboxRow">
+                  <span>Add as admin?</span>
+                  <label className="adminSwitch">
                     <input
                       type="checkbox"
                       checked={showRoleModal.isAdmin}
@@ -481,19 +525,19 @@ export default function AdminUsers() {
                         })
                       }
                     />
-                    <span className="checkbox-slider"></span>
+                    <span className="adminSwitchSlider"></span>
                   </label>
                 </div>
               </div>
-              <div className="modal-footer">
+              <div className="adminModalFooter">
                 <button
-                  className="modal-cancel"
+                  className="adminModalCancel"
                   onClick={() => setShowRoleModal(null)}
                 >
                   Cancel
                 </button>
                 <button
-                  className="modal-create"
+                  className="adminModalCreate"
                   onClick={() =>
                     handleUpdateRole(
                       showRoleModal.id,
@@ -509,20 +553,22 @@ export default function AdminUsers() {
           </div>
         )}
 
-        {/* Edit User Modal with Password Toggles */}
         {showEditModal && (
-          <div className="modal-overlay" onClick={() => setShowEditModal(null)}>
+          <div
+            className="adminModalOverlay"
+            onClick={() => setShowEditModal(null)}
+          >
             <div
-              className="modal-container"
+              className="adminModalContainer"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="modal-header">
+              <div className="adminModalHeader">
                 <h3>Edit User: {showEditModal.name}</h3>
                 <button onClick={() => setShowEditModal(null)}>
                   <X size={18} />
                 </button>
               </div>
-              <div className="modal-body">
+              <div className="adminModalBody">
                 <input
                   type="email"
                   placeholder="Email"
@@ -530,19 +576,16 @@ export default function AdminUsers() {
                   onChange={(e) => setEditEmail(e.target.value)}
                   required
                 />
-                <div className="password-input-wrapper">
+                <div className="adminPasswordWrapper">
                   <input
                     type={showEditPassword ? "text" : "password"}
                     placeholder="New Password (leave blank to keep current)"
                     value={editPassword}
                     onChange={(e) => setEditPassword(e.target.value)}
-                    autoComplete="new-password"
                   />
                   <button
                     type="button"
-                    className="password-toggle"
                     onClick={() => setShowEditPassword(!showEditPassword)}
-                    tabIndex={-1}
                   >
                     {showEditPassword ? (
                       <Eye size={18} />
@@ -551,7 +594,7 @@ export default function AdminUsers() {
                     )}
                   </button>
                 </div>
-                <div className="password-input-wrapper">
+                <div className="adminPasswordWrapper">
                   <input
                     type={showEditConfirmPassword ? "text" : "password"}
                     placeholder="Confirm New Password"
@@ -561,11 +604,9 @@ export default function AdminUsers() {
                   />
                   <button
                     type="button"
-                    className="password-toggle"
                     onClick={() =>
                       setShowEditConfirmPassword(!showEditConfirmPassword)
                     }
-                    tabIndex={-1}
                     disabled={!editPassword}
                   >
                     {showEditConfirmPassword ? (
@@ -575,17 +616,17 @@ export default function AdminUsers() {
                     )}
                   </button>
                 </div>
-                {editError && <p className="password-error">{editError}</p>}
+                {editError && <p className="adminErrorText">{editError}</p>}
               </div>
-              <div className="modal-footer">
+              <div className="adminModalFooter">
                 <button
-                  className="modal-cancel"
+                  className="adminModalCancel"
                   onClick={() => setShowEditModal(null)}
                 >
                   Cancel
                 </button>
                 <button
-                  className="modal-create"
+                  className="adminModalCreate"
                   onClick={handleUpdateUser}
                   disabled={updating}
                 >
@@ -596,38 +637,37 @@ export default function AdminUsers() {
           </div>
         )}
 
-        {/* Delete Confirmation Modal */}
         {showDeleteConfirm !== null && (
           <div
-            className="modal-overlay"
+            className="adminModalOverlay"
             onClick={() => setShowDeleteConfirm(null)}
           >
             <div
-              className="modal-container delete-modal"
+              className="adminModalContainer adminWarningModal"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="modal-header">
+              <div className="adminModalHeader">
                 <h3>Delete User</h3>
                 <button onClick={() => setShowDeleteConfirm(null)}>
                   <X size={18} />
                 </button>
               </div>
-              <div className="modal-body">
+              <div className="adminModalBody">
                 <p>Are you sure you want to delete this user?</p>
-                <p className="modal-warning">
+                <p className="adminModalWarning">
                   This action cannot be undone. All their posts and comments
                   will be permanently deleted.
                 </p>
               </div>
-              <div className="modal-footer">
+              <div className="adminModalFooter">
                 <button
-                  className="modal-cancel"
+                  className="adminModalCancel"
                   onClick={() => setShowDeleteConfirm(null)}
                 >
                   Cancel
                 </button>
                 <button
-                  className="modal-delete"
+                  className="adminModalDelete"
                   onClick={() => handleDeleteUser(showDeleteConfirm)}
                 >
                   Delete User

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, Image, Hash } from "lucide-react";
 import styles from "./PostForm.module.css";
 
 interface Props {
@@ -58,9 +58,9 @@ export default function PostForm({ onSubmit, onClose, isInline }: Props) {
           onChange={(e) => setStatus(e.target.value)}
           className={styles.select}
         >
-          <option value="sharing_idea">Looking for Ideas</option>
-          <option value="open_to_collaborate">Looking to Collaborate</option>
-          <option value="seeking_investment">Looking for Investors</option>
+          <option value="sharing_idea">Sharing Idea</option>
+          <option value="open_to_collaborate">Open to Collaborate</option>
+          <option value="seeking_investment">Seeking Investment</option>
         </select>
         <button
           type="submit"

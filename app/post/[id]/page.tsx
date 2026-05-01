@@ -89,6 +89,7 @@ export default function PostDetailPage() {
                   onChange={(e) => setEditBody(e.target.value)}
                   rows={6}
                   className="w-full bg-zinc-900 border border-zinc-700 px-4 py-3 text-white focus:outline-none focus:border-white resize-none"
+                  style={{ whiteSpace: 'pre-wrap', lineHeight: '1.55' }}
                   placeholder="Write your post..."
                   title="Edit post body"
                 />
@@ -146,7 +147,7 @@ export default function PostDetailPage() {
                   )}
                 </div>
                 {post.status && <StatusBadge status={post.status} />}
-                <p className="mt-4 text-gray-300 leading-relaxed">
+                <p className="mt-4 text-gray-300 leading-relaxed" style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
                   {post.body}
                 </p>
                 <p className="mt-6 text-xs text-gray-600">

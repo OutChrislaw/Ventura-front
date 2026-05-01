@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored_token = localStorage.getItem("ventur_token");
     const stored_user = localStorage.getItem("ventur_user");
-    
+
     if (stored_token && stored_user) {
       // Verify token with backend
       fetch(`${API}/me`, {
@@ -122,7 +122,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, token, loading, login, register, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

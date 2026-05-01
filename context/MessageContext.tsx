@@ -56,7 +56,10 @@ interface MessageContextType {
   searchUsers: (query: string) => Promise<any[]>;
   markAsRead: (messageId: number) => Promise<void>;
   deleteConversation: (conversationId: number) => Promise<void>;
-  deleteMessage: (messageId: number, type: 'for_everyone' | 'for_me') => Promise<{ success: boolean; messageId: number; type?: string }>;
+  deleteMessage: (
+    messageId: number,
+    type: "for_everyone" | "for_me",
+  ) => Promise<{ success: boolean; messageId: number; type?: string }>;
 }
 
 export const MessageContext = createContext<MessageContextType>(
@@ -234,9 +237,12 @@ export function MessageProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const deleteMessage = async (messageId: number, type: 'for_everyone' | 'for_me') => {
+  const deleteMessage = async (
+    messageId: number,
+    type: "for_everyone" | "for_me",
+  ) => {
     if (!token || !user) return { success: false, messageId };
-    
+
     try {
       const res = await fetch(`${API}/messages/${messageId}`, {
         method: "DELETE",
@@ -246,16 +252,16 @@ export function MessageProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({ type }),
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       // Refresh conversations to update unread counts
       await fetchConversations();
-      
+
       return { success: true, messageId, type: data.type };
     } catch (error) {
       console.error("Error deleting message:", error);

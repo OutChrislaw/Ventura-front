@@ -94,6 +94,7 @@
   color: #3c4a5c;
   line-height: 1.5;
   word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .deleteCommentBtn {
@@ -128,6 +129,7 @@
   font-size: 13px;
   outline: none;
   transition: all 0.2s;
+  white-space: pre-wrap;
 }
 
 .commentInput:focus {

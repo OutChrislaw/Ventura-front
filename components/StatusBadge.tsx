@@ -1,9 +1,9 @@
 import styles from "./StatusBadge.module.css";
 
 const MAP: Record<string, { label: string; cls: string }> = {
-  seeking_investment: { label: "Looking for Investors", cls: styles.investor },
-  open_to_collaborate: { label: "Looking to Collaborate", cls: styles.collab },
-  sharing_idea: { label: "Looking for Ideas", cls: styles.idea },
+  seeking_investment: { label: "Seeking Investment", cls: styles.investor },
+  open_to_collaborate: { label: "Open to Collaborate", cls: styles.collab },
+  sharing_idea: { label: "Sharing Idea", cls: styles.idea },
 };
 
 export default function StatusBadge({ status }: { status: string }) {
